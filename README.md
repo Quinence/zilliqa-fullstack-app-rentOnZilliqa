@@ -2,6 +2,8 @@
 
 The Zilliqa Fullstack app is a full-fledged application on the Zilliqa Blockchain for listing and renting houses.
 
+[Watch the demo](https://www.loom.com/share/7f9530f80de34ba6be8b9a954f331e47).
+
 ## The technology
 
 - [Create React App](https://github.com/facebook/create-react-app) for the frontend.
