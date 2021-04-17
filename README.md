@@ -4,6 +4,8 @@ The Zilliqa Fullstack app is a full-fledged application on the Zilliqa Blockchai
 
 [Watch the demo](https://www.loom.com/share/7f9530f80de34ba6be8b9a954f331e47).
 
+[Try the app](https://rentonzilliqa-frontend.vercel.app).
+
 ## The technology
 
 - [Create React App](https://github.com/facebook/create-react-app) for the frontend.
