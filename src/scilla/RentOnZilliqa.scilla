@@ -122,7 +122,7 @@ transition create_user (name: String, role: Uint32)
     user_role[_sender] := role;
     send_message zero user_created
   end
-end 
+end
 
 (* Transition for a host user to create a listing *)
 (* The set_listing_details procedure is used to assign listing details to the map *)
@@ -160,19 +160,19 @@ transition create_listing (
   end
 end
 
-(* Transition for booking a listing with the given id *)
+(* Procedure for booking a listing with the given id *)
 procedure book_listing_by_id (id: Uint128)
-  accept;
-  current_block_number <- & BLOCKNUMBER;
-  night_duration_value <- night_duration;
-  rented_till = builtin badd current_block_number night_duration_value;
-  listing_rented_till[id] := rented_till;
-  listing_renter[id] := _sender;
-  commission <- owners_commission;
-  rent = builtin sub _amount commission;
   accumulated_rent <- listing_accumulated_rent[id];
   match accumulated_rent with
   | Some accumulated_rent =>
+    accept;
+    current_block_number <- & BLOCKNUMBER;
+    night_duration_value <- night_duration;
+    rented_till = builtin badd current_block_number night_duration_value;
+    listing_rented_till[id] := rented_till;
+    listing_renter[id] := _sender;
+    commission <- owners_commission;
+    rent = builtin sub _amount commission;
     new_accumulated_rent = builtin add accumulated_rent rent;
     listing_accumulated_rent[id] := new_accumulated_rent;
     e = { _eventname: "ListingBooked"; listing_id: id; renter: _sender; amount: _amount };
