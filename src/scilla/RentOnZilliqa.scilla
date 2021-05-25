@@ -1,7 +1,7 @@
 scilla_version 0
 import BoolUtils
 
-(*ASSOCIATED LIBRARY*)
+(* ASSOCIATED LIBRARY *)
 library RentOnZilliqa
 let one_msg =
   fun (msg: Message) =>
@@ -9,34 +9,34 @@ let one_msg =
   Cons {Message} msg nil_msg
 
 
-(*Account codes*)
-let user_created = Int32 01 (*Successfully created user*)
-let user_exists = Int32 02 (*User already exists*)
-let user_does_not_exist = Int32 03 (*User does not exist*)
-let user_is_not_owner = Int32 04 (*Cannot update/claim commission as user is not owner*)
-let commission_claimed = Int32 05 (*Commission claimed by owner*)
-let commission_updated = Int32 06 (*Commission updated by owner*)
-let night_duration_updated = Int32 07 (*Night Duration updated by owner*)
+(* Account codes *)
+let user_created = Int32 01 (* Successfully created user *)
+let user_exists = Int32 02 (* User already exists *)
+let user_does_not_exist = Int32 03 (* User does not exist *)
+let user_is_not_owner = Int32 04 (* Cannot update/claim commission as user is not owner *)
+let commission_claimed = Int32 05 (* Commission claimed by owner *)
+let commission_updated = Int32 06 (* Commission updated by owner *)
+let night_duration_updated = Int32 07 (* Night Duration updated by owner *)
 
-(*Host account codes*)
-let listing_created = Int32 11 (*Successfully created listing*)
-let listing_updated = Int32 12 (*Successfully updated listing*)
-let listing_deleted = Int32 13 (*Successfully deleted listing*)
-let rent_claimed = Int32 14 (*Successfully claimed rent from listing*)
-let rent_empty = Int32 15 (*No accumulated rent for listing being claimed*)
-let rent_not_empty = Int32 16 (*Cannot delete listing as it has accumulated rent*)
-let user_is_host = Int32 17 (*Cannot book listing because user is host*)
-let user_is_not_host = Int32 18 (*Cannot manage listing because sender is not host*)
+(* Host account codes *)
+let listing_created = Int32 11 (* Successfully created listing *)
+let listing_updated = Int32 12 (* Successfully updated listing *)
+let listing_deleted = Int32 13 (* Successfully deleted listing *)
+let rent_claimed = Int32 14 (* Successfully claimed rent from listing *)
+let rent_empty = Int32 15 (* No accumulated rent for listing being claimed *)
+let rent_not_empty = Int32 16 (* Cannot delete listing as it has accumulated rent *)
+let user_is_host = Int32 17 (* Cannot book listing because user is host *)
+let user_is_not_host = Int32 18 (* Cannot manage listing because sender is not host *)
 
-(*Renter account codes*)
-let listing_booked = Int32 21 (*Successfully booked listing*)
-let listing_unavailable = Int32 22 (*Cannot book listing because it is rented*)
-let user_is_renter = Int32 23 (*Cannot create listing as user is a renter account*)
-let wrong_amount_sent = Int32 24 (*Cannot book listing as amount is wrong*)
-let listing_does_not_exist = Int32 25 (*Cannot book listing because it does not exist*)
-let listing_details_missing = Int32 26 (*Listing details are missing*)
+(* Renter account codes *)
+let listing_booked = Int32 21 (* Successfully booked listing *)
+let listing_unavailable = Int32 22 (* Cannot book listing because it is rented *)
+let user_is_renter = Int32 23 (* Cannot create listing as user is a renter account *)
+let wrong_amount_sent = Int32 24 (* Cannot book listing as amount is wrong *)
+let listing_does_not_exist = Int32 25 (* Cannot book listing because it does not exist *)
+let listing_details_missing = Int32 26 (* Listing details are missing *)
 
-(*Account roles*)
+(* Account roles *)
 let user_role_renter = Uint32 0
 let user_role_host = Uint32 1
 
@@ -48,7 +48,7 @@ let false = False
 
 
 
-(*THE CONTRACT DEFINITION*)
+(* THE CONTRACT DEFINITION *)
 contract RentOnZilliqa
 (
   owner: ByStr20
@@ -57,7 +57,7 @@ contract RentOnZilliqa
 field owners_commission: Uint128 = Uint128 10
 
 field user_name: Map ByStr20 String = Emp ByStr20 String
-field user_role: Map ByStr20 Uint32 = Emp ByStr20 Uint32 (*0: Renter, 1: Host*)
+field user_role: Map ByStr20 Uint32 = Emp ByStr20 Uint32 (* 0: Renter, 1: Host *)
 
 field listing_host: Map Uint128 ByStr20 = Emp Uint128 ByStr20
 field listing_renter: Map Uint128 ByStr20 = Emp Uint128 ByStr20
@@ -79,26 +79,58 @@ field listing_id_generator: Uint128 = zero
 
 field night_duration: Uint32 = Uint32 10 (* Added to BlockNumber and saved to listing_rented_till *)
 
-transition create_user(name: String, role: Uint32)
+(* Procedure for assigning the details for a listing with the given id *)
+procedure set_listing_details (
+  id: Uint128, name: String, description: String, price: Uint128,
+  rooms: Uint32, bathrooms: Uint32, image: String, location: String,
+  wifi: String, laundry: String, hvac: String, tv: String, kitchen: String
+)
+  listing_name[id] := name;
+  listing_description[id] := description;
+  listing_price[id] := price;
+  listing_rooms[id] := rooms;
+  listing_bathrooms[id] := bathrooms;
+  listing_image[id] := image;
+  listing_location[id] := location;
+  listing_wifi[id] := wifi;
+  listing_laundry[id] := laundry;
+  listing_hvac[id] := hvac;
+  listing_tv[id] := tv;
+  listing_kitchen[id] := kitchen
+end
+
+(* Procedure for sending a message *)
+procedure send_message (amount: Uint128, code: Int32)
+  msg = {
+    _tag: "";
+    _recipient: _sender;
+    _amount: amount;
+    code: code
+  };
+  msgs = one_msg msg;
+  send msgs
+end
+
+(* Transition for creating a user *)
+transition create_user (name: String, role: Uint32)
   user_exists_check <- exists user_name[_sender];
   match user_exists_check with
   | True =>
-    msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_exists};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero user_exists
   | False =>
     user_name[_sender] := name;
     user_role[_sender] := role;
-    msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_created};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero user_created
   end
 end 
 
-transition create_listing(
-  name: String, description: String, price: Uint128, rooms: Uint32, bathrooms: Uint32,
-  image: String, location: String,
-  wifi: String, laundry: String, hvac: String, tv: String, kitchen: String )
+(* Transition for a host user to create a listing *)
+(* The set_listing_details procedure is used to assign listing details to the map *)
+transition create_listing (
+  name: String, description: String, price: Uint128,
+  rooms: Uint32, bathrooms: Uint32, image: String, location: String,
+  wifi: String, laundry: String, hvac: String, tv: String, kitchen: String
+)
   user_exists_check <- exists user_name[_sender];
   match user_exists_check with
   | True =>
@@ -111,43 +143,85 @@ transition create_listing(
         id <- listing_id_generator;
         current_block_number <- & BLOCKNUMBER;
         listing_host[id] := _sender;
+        set_listing_details id name description price rooms bathrooms image location wifi laundry hvac tv kitchen;
         listing_rented_till[id] := current_block_number;
-        listing_name[id] := name;
-        listing_description[id] := description;
-        listing_price[id] := price;
-        listing_rooms[id] := rooms;
-        listing_image[id] := image;
         listing_accumulated_rent[id] := zero;
-        listing_bathrooms[id] := bathrooms;
-        listing_location[id] := location;
-        listing_wifi[id] := wifi;
-        listing_laundry[id] := laundry;
-        listing_hvac[id] := hvac;
-        listing_tv[id] := tv;
-        listing_kitchen[id] := kitchen;
         next_listing_id = builtin add id one;
         listing_id_generator := next_listing_id;
-        msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_created};
-        msgs = one_msg msg;
-        send msgs
+        send_message zero listing_created
       | False =>
-        msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_is_renter};
-        msgs = one_msg msg;
-        send msgs
+        send_message zero user_is_renter
       end
     | None =>
-      msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_does_not_exist};
-      msgs = one_msg msg;
-      send msgs
+      send_message zero user_does_not_exist
     end    
   | False =>
-    msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_does_not_exist};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero user_does_not_exist
   end
 end
 
-transition book_listing(id: Uint128)
+(* Transition for booking a listing with the given id *)
+procedure book_listing_by_id (id: Uint128)
+  accept;
+  current_block_number <- & BLOCKNUMBER;
+  night_duration_value <- night_duration;
+  rented_till = builtin badd current_block_number night_duration_value;
+  listing_rented_till[id] := rented_till;
+  listing_renter[id] := _sender;
+  commission <- owners_commission;
+  rent = builtin sub _amount commission;
+  accumulated_rent <- listing_accumulated_rent[id];
+  match accumulated_rent with
+  | Some accumulated_rent =>
+    new_accumulated_rent = builtin add accumulated_rent rent;
+    listing_accumulated_rent[id] := new_accumulated_rent;
+    e = { _eventname: "ListingBooked"; listing_id: id; renter: _sender; amount: _amount };
+    event e;
+    send_message zero listing_booked
+  | None =>
+    send_message zero listing_details_missing
+  end
+end
+
+(* Procedure to check whether the amount sent for booking a listing is correct *)
+procedure check_amount_and_book (id: Uint128)
+  listing_price_value <- listing_price[id];
+  match listing_price_value with
+  | Some listing_price_value =>
+    correct_amount_check = builtin eq _amount listing_price_value;
+    match correct_amount_check with
+    | True =>
+      book_listing_by_id id
+    | False =>
+      send_message zero wrong_amount_sent
+    end
+  | None =>
+    send_message zero listing_details_missing
+  end
+end
+
+(* Procedure to check whether the listing is available for booking *)
+procedure check_listing_available (id: Uint128)
+  current_block_number <- & BLOCKNUMBER;
+  listing_rented_till_value <- listing_rented_till[id];
+  match listing_rented_till_value with
+  | Some listing_rented_till_value =>
+    is_rented_lt = builtin blt current_block_number listing_rented_till_value;
+    is_rented_eq = builtin eq current_block_number listing_rented_till_value;
+    listing_is_rented_check = orb is_rented_lt is_rented_eq;
+    match listing_is_rented_check with
+    | True =>
+      send_message zero listing_unavailable
+    | False =>
+      check_amount_and_book id
+    end
+  | None =>
+    send_message zero listing_details_missing
+  end
+end
+
+(* Transition for booking a listing *)
+transition book_listing (id: Uint128)
   user_exists_check <- exists user_name[_sender];
   match user_exists_check with
   | True =>
@@ -157,81 +231,41 @@ transition book_listing(id: Uint128)
       user_is_host_check = builtin eq host _sender;
       match user_is_host_check with
       | True =>
-        msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_is_host};
-        msgs = one_msg msg;
-        send msgs
+        send_message zero user_is_host
       | False =>
-        current_block_number <- & BLOCKNUMBER;
-        listing_rented_till_value <- listing_rented_till[id];
-        match listing_rented_till_value with
-        | Some listing_rented_till_value =>
-          is_rented_lt = builtin blt current_block_number listing_rented_till_value;
-          is_rented_eq = builtin eq current_block_number listing_rented_till_value;
-          listing_is_rented_check = orb is_rented_lt is_rented_eq;
-          match listing_is_rented_check with
-          | True =>
-            msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_unavailable};
-            msgs = one_msg msg;
-            send msgs
-          | False =>
-            listing_price_value <- listing_price[id];
-            match listing_price_value with
-            | Some listing_price_value =>
-              correct_amount_check = builtin eq _amount listing_price_value;
-              match correct_amount_check with
-              | True =>
-                accept;
-                night_duration_value <- night_duration;
-                rented_till = builtin badd current_block_number night_duration_value;
-                listing_rented_till[id] := rented_till;
-                listing_renter[id] := _sender;
-                commission <- owners_commission;
-                rent = builtin sub _amount commission;
-                accumulated_rent <- listing_accumulated_rent[id];
-                match accumulated_rent with
-                | Some accumulated_rent =>
-                  new_accumulated_rent = builtin add accumulated_rent rent;
-                  listing_accumulated_rent[id] := new_accumulated_rent;
-                  msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_booked};
-                  msgs = one_msg msg;
-                  e = { _eventname: "ListingBooked"; listing_id: id; renter: _sender; amount: _amount };
-                  event e;
-                  send msgs
-                | None =>
-                  msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_details_missing};
-                  msgs = one_msg msg;
-                  send msgs
-                end
-              | False =>
-                msg = {_tag: ""; _recipient: _sender; _amount: zero; code: wrong_amount_sent};
-                msgs = one_msg msg;
-                send msgs
-              end
-            | None =>
-              msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_details_missing};
-              msgs = one_msg msg;
-              send msgs
-            end
-          end
-        | None =>
-          msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_details_missing};
-          msgs = one_msg msg;
-          send msgs
-        end
+        check_listing_available id
       end
     | None =>
-      msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_does_not_exist};
-      msgs = one_msg msg;
-      send msgs
+      send_message zero listing_does_not_exist
     end
   | False =>
-    msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_does_not_exist};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero user_does_not_exist
   end
 end
 
-transition claim_rent(id: Uint128)
+(* Procedure for host user to claim rent from a listing *)
+procedure claim_rent_by_id (id: Uint128)
+  accumulated_rent <- listing_accumulated_rent[id];
+  match accumulated_rent with
+  | Some accumulated_rent =>
+    no_accumulated_rent = builtin eq accumulated_rent zero;
+    match no_accumulated_rent with
+    | True =>
+      send_message zero rent_empty
+    | False =>
+      listing_accumulated_rent[id] := zero;
+      e = { _eventname: "RentClaimed"; listing_id: id; renter: _sender; amount: accumulated_rent };
+      event e;
+      send_message accumulated_rent rent_claimed
+    end
+  | None =>
+    send_message zero listing_details_missing
+  end
+end
+
+(* Transition for owner to claim rent from a listing *)
+(* Listing and its host are checked before calling the claim_rent_by_id procedure *)
+transition claim_rent (id: Uint128)
   user_exists_check <- exists user_name[_sender];
   match user_exists_check with
   | True =>
@@ -241,128 +275,100 @@ transition claim_rent(id: Uint128)
       user_is_host_check = builtin eq host _sender;
       match user_is_host_check with
       | True =>
-        accumulated_rent <- listing_accumulated_rent[id];
-        match accumulated_rent with
-        | Some accumulated_rent =>
-          no_accumulated_rent = builtin eq accumulated_rent zero;
-          match no_accumulated_rent with
-          | True =>
-            msg = {_tag: ""; _recipient: _sender; _amount: zero; code: rent_empty};
-            msgs = one_msg msg;
-            send msgs
-          | False =>
-            listing_accumulated_rent[id] := zero;
-            msg = {_tag: ""; _recipient: _sender; _amount: accumulated_rent; code: rent_claimed};
-            msgs = one_msg msg;
-            e = { _eventname: "RentClaimed"; listing_id: id; renter: _sender; amount: accumulated_rent };
-            event e;
-            send msgs
-          end
-        | None =>
-          msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_details_missing};
-          msgs = one_msg msg;
-          send msgs
-        end
+        claim_rent_by_id id
       | False =>
-        msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_is_not_host};
-        msgs = one_msg msg;
-        send msgs
+        send_message zero user_is_not_host
       end
     | None =>
-      msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_does_not_exist};
-      msgs = one_msg msg;
-      send msgs
+      send_message zero listing_does_not_exist
     end
   | False =>
-    msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_does_not_exist};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero user_does_not_exist
   end
 end
 
-transition claim_commission()
+(* Transition for contract owner to claim commission *)
+transition claim_commission ()
   is_owner = builtin eq owner _sender;
   match is_owner with
   | False =>
-    msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_is_not_owner};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero user_is_not_owner
   | True =>
     balance <- _balance;
-    msg  = {_tag : ""; _recipient: owner; _amount: balance; code: commission_claimed};
-    msgs = one_msg msg;
-    send msgs
+    send_message balance commission_claimed
   end
 end
 
-transition update_commission(new_commission: Uint128)
+(* Transition for contract owner to update the commission collected from rented listings *)
+transition update_commission (new_commission: Uint128)
   is_owner = builtin eq owner _sender;
   match is_owner with
   | False =>
-    msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_is_not_owner};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero user_is_not_owner
   | True =>
     owners_commission := new_commission;
-    msg  = {_tag : ""; _recipient: owner; _amount: zero; code: commission_updated};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero commission_updated
   end
 end
 
-transition update_night_duration(new_night_duration: Uint32)
+(* Transition for contract owner to update the night duration in block numbers *)
+transition update_night_duration (new_night_duration: Uint32)
   is_owner = builtin eq owner _sender;
   match is_owner with
   | False =>
-    msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_is_not_owner};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero user_is_not_owner
   | True =>
     night_duration := new_night_duration;
-    msg  = {_tag : ""; _recipient: owner; _amount: zero; code: night_duration_updated};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero night_duration_updated
   end
 end
 
-transition update_listing(
-  id: Uint128, name: String, description: String, price: Uint128, rooms: Uint32, bathrooms: Uint32,
-  image: String, location: String,
-  wifi: String, laundry: String, hvac: String, tv: String, kitchen: String )
+(* Transition for a host to update their listing's details *)
+(* The set_listing_details procedure is used to assign listing details to the map *)
+transition update_listing (
+  id: Uint128, name: String, description: String, price: Uint128,
+  rooms: Uint32, bathrooms: Uint32, image: String, location: String,
+  wifi: String, laundry: String, hvac: String, tv: String, kitchen: String
+)
   host <- listing_host[id];
   match host with
   | Some host =>
     user_is_host_check = builtin eq host _sender;
     match user_is_host_check with
     | True =>
-      listing_name[id] := name;
-      listing_description[id] := description;
-      listing_price[id] := price;
-      listing_rooms[id] := rooms;
-      listing_bathrooms[id] := bathrooms;
-      listing_image[id] := image;
-      listing_location[id] := location;
-      listing_wifi[id] := wifi;
-      listing_laundry[id] := laundry;
-      listing_hvac[id] := hvac;
-      listing_tv[id] := tv;
-      listing_kitchen[id] := kitchen;
-      msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_updated};
-      msgs = one_msg msg;
-      send msgs
+      set_listing_details id name description price rooms bathrooms image location wifi laundry hvac tv kitchen;
+      send_message zero listing_updated
     | False =>
-      msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_is_not_host};
-      msgs = one_msg msg;
-      send msgs
+      send_message zero user_is_not_host
     end
   | None =>
-    msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_does_not_exist};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero listing_does_not_exist
   end
 end
 
-transition delete_listing(id: Uint128)
+(* Procedure for deleting the listing with the given id *)
+procedure delete_listing_by_id (id: Uint128)
+  delete listing_name[id];
+  delete listing_description[id];
+  delete listing_price[id];
+  delete listing_rooms[id];
+  delete listing_image[id];
+  delete listing_host[id];
+  delete listing_renter[id];
+  delete listing_rented_till[id];
+  delete listing_accumulated_rent[id];
+  delete listing_bathrooms[id];
+  delete listing_location[id];
+  delete listing_wifi[id];
+  delete listing_laundry[id];
+  delete listing_hvac[id];
+  delete listing_tv[id];
+  delete listing_kitchen[id]
+end
+
+(* Transition for a host to delete their listing *)
+(* Listing is checked before the delete_listing_by_id procedure is called *)
+transition delete_listing (id: Uint128)
   host <- listing_host[id];
   match host with
   | Some host =>
@@ -375,43 +381,18 @@ transition delete_listing(id: Uint128)
         no_rent = builtin eq accumulated_rent_value zero;
         match no_rent with
         | True =>
-          delete listing_name[id];
-          delete listing_description[id];
-          delete listing_price[id];
-          delete listing_rooms[id];
-          delete listing_image[id];
-          delete listing_host[id];
-          delete listing_renter[id];
-          delete listing_rented_till[id];
-          delete listing_accumulated_rent[id];
-          delete listing_bathrooms[id];
-          delete listing_location[id];
-          delete listing_wifi[id];
-          delete listing_laundry[id];
-          delete listing_hvac[id];
-          delete listing_tv[id];
-          delete listing_kitchen[id];
-          msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_deleted};
-          msgs = one_msg msg;
-          send msgs
+          delete_listing_by_id id;
+          send_message zero listing_deleted
         | False =>
-          msg = {_tag: ""; _recipient: _sender; _amount: zero; code: rent_not_empty};
-          msgs = one_msg msg;
-          send msgs
+          send_message zero rent_not_empty
         end
       | None =>
-        msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_details_missing};
-        msgs = one_msg msg;
-        send msgs
+        send_message zero listing_details_missing
       end
     | False =>
-      msg = {_tag: ""; _recipient: _sender; _amount: zero; code: user_is_not_host};
-      msgs = one_msg msg;
-      send msgs
+      send_message zero user_is_not_host
     end
   | None =>
-    msg = {_tag: ""; _recipient: _sender; _amount: zero; code: listing_does_not_exist};
-    msgs = one_msg msg;
-    send msgs
+    send_message zero listing_does_not_exist
   end
 end
