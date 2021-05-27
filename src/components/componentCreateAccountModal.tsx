@@ -20,7 +20,7 @@ type props = {
     setShowSignUp(visible: boolean): void;
 };
 
-const SignUpModal: React.FC<props> = (props) => {
+const CreateAccountModal: React.FC<props> = (props) => {
     const { showSignUp, setShowSignUp } = props;
     const [name, setName] = useState<string | undefined>(undefined);
     const [userRole, setUserRole] = useState<string | undefined>("host");
@@ -116,4 +116,4 @@ const SignUpModal: React.FC<props> = (props) => {
     );
 };
 
-export default SignUpModal;
+export default CreateAccountModal;
