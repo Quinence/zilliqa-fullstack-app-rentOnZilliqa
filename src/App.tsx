@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Header from "./components/componentHeader";
 import Listing from "./components/componentListing";
 import Listings from "./components/componentListings";
-import SignUpModal from "./components/componentCreateAccountModal";
+import CreateAccountModal from "./components/componentCreateAccountModal";
 import ContextContainer from "./functions/contextContainer";
 import { Toaster } from "react-hot-toast";
 import {
@@ -95,7 +95,7 @@ const App: React.FC = () => {
                         </Route>
                         <Redirect to={"/listings"} />
                     </Switch>
-                    <SignUpModal {...{ showSignUp, setShowSignUp }} />
+                    <CreateAccountModal {...{ showSignUp, setShowSignUp }} />
                 </main>
             </Router>
             <Toaster
