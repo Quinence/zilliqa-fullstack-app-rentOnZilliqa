@@ -2,7 +2,7 @@ scilla_version 0
 import BoolUtils
 
 (* ASSOCIATED LIBRARY *)
-library RentOnZilliqa
+library NFTAuthOnZilliqa
 let one_msg =
   fun (msg: Message) =>
   let nil_msg = Nil {Message} in
@@ -49,7 +49,7 @@ let false = False
 
 
 (* THE CONTRACT DEFINITION *)
-contract RentOnZilliqa
+contract NFTAuthOnZilliqa
 (
   owner: ByStr20
 )
