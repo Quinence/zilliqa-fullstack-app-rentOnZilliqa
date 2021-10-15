@@ -1,6 +1,6 @@
 # NFT Authentication With Zilliqa
 
-The Zilliqa Fullstack app is a full-fledged application on the Zilliqa Blockchain for listing and renting houses.
+Authenticating Employees To Access Internal Tools With NFTs on Zilliqa
 
 [Watch the demo](https://www.loom.com/share/7f9530f80de34ba6be8b9a954f331e47).
 
